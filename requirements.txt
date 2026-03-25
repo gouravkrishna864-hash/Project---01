@@ -6,3 +6,10 @@ python-dotenv==1.0.1
 Pillow==10.2.0
 schedule==1.2.1
 requests==2.31.0
+
+# Animation
+manim==0.19.0          # 2D & 3D animation engine (uses PyAV — no system FFmpeg needed)
+
+# Optional: LLM-powered topic generation
+anthropic>=0.25.0      # Claude API — pass client.messages.create wrapper to TopicGenerator
+openai>=1.30.0         # OpenAI API — alternative LLM backend
