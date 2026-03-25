@@ -1,0 +1,75 @@
+name: YouTube Channel Automation
+
+on:
+  # Allow manual trigger with inputs
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Automation task to run'
+        required: true
+        type: choice
+        options:
+          - generate-script
+          - create-metadata
+          - analyze-channel
+          - bulk-update-descriptions
+      topic:
+        description: 'Topic or extra context for the task'
+        required: false
+        type: string
+      dry_run:
+        description: 'Dry run (no changes applied)'
+        required: false
+        default: 'true'
+        type: boolean
+
+  # Scheduled tasks
+  schedule:
+    # Analyse channel performance every Monday at 08:00 UTC
+    - cron: '0 8 * * 1'
+
+jobs:
+  run-automation:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          [ -f requirements.txt ] && pip install -r requirements.txt || true
+
+      - name: Run Claude Code automation
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          YOUTUBE_CHANNEL_ID: ${{ secrets.YOUTUBE_CHANNEL_ID }}
+          TASK: ${{ github.event.inputs.task || 'analyze-channel' }}
+          TOPIC: ${{ github.event.inputs.topic || '' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
+        run: |
+          echo "Running task: $TASK"
+          echo "Topic: $TOPIC"
+          echo "Dry run: $DRY_RUN"
+          # Claude Code remote trigger execution
+          # claude --trigger "$TASK" --input "topic=$TOPIC" --input "dry_run=$DRY_RUN"
+          python3 scripts/run_task.py "$TASK" "$TOPIC" "$DRY_RUN"
+
+      - name: Commit generated outputs
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add logs/ scripts/output/ || true
+          git diff --cached --quiet || git commit -m "chore: automation output for task '${{ github.event.inputs.task }}'"
+          git push

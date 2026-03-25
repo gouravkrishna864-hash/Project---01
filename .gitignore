@@ -1,0 +1,27 @@
+# Secrets & credentials
+.env
+*.env
+secrets.json
+credentials.json
+token.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Logs (keep directory, ignore content)
+logs/*.log
+logs/*.md
+!logs/.gitkeep
+
+# Generated script outputs
+scripts/output/*.md
+scripts/output/*.json
+!scripts/output/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db

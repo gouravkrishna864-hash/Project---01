@@ -1,0 +1,32 @@
+{
+  "triggers": [
+    {
+      "id": "generate-script",
+      "name": "Generate Video Script",
+      "description": "Generate a YouTube video script given a topic",
+      "prompt": "Generate a detailed YouTube video script for the topic provided. Include intro hook, main sections with timestamps, call-to-action, and outro. Save the output to scripts/output/<slug>.md.",
+      "inputs": ["topic", "duration_minutes", "style"]
+    },
+    {
+      "id": "create-metadata",
+      "name": "Create Video Metadata",
+      "description": "Generate SEO-optimised title, description, and tags for a video",
+      "prompt": "Create YouTube SEO metadata (title under 70 chars, description under 5000 chars with keywords, 15 tags) for the video described. Save to scripts/output/<slug>_metadata.json.",
+      "inputs": ["video_topic", "target_audience"]
+    },
+    {
+      "id": "analyze-channel",
+      "name": "Analyse Channel Performance",
+      "description": "Review recent video metrics and suggest improvements",
+      "prompt": "Using the YouTube Data API, fetch the last 10 video stats from config/channel.json, identify trends, and write a report to logs/analysis_<date>.md.",
+      "inputs": []
+    },
+    {
+      "id": "bulk-update-descriptions",
+      "name": "Bulk Update Descriptions",
+      "description": "Append a standard footer/CTA to all video descriptions",
+      "prompt": "Read the footer template from config/channel.json and append it to the descriptions of all videos that don't already contain it. Log every updated video ID to logs/bulk_update_<date>.log.",
+      "inputs": ["dry_run"]
+    }
+  ]
+}
