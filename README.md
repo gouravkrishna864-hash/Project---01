@@ -17,7 +17,9 @@ Automates scheduling and uploading videos to a YouTube channel via the YouTube D
 │   └── analytics.py        # Analytics fetching     (TODO)
 └── content/
     ├── metadata.py          # Title / description / tags helpers (TODO: auto-tags)
-    └── thumbnail.py         # Thumbnail generation   (TODO)
+    ├── thumbnail.py         # Thumbnail generation   (IMPLEMENTED)
+    ├── topic_generator.py   # Topic & title generator (IMPLEMENTED)
+    └── animator.py          # 2D/3D animation builder (IMPLEMENTED)
 ```
 
 ## Modules
@@ -132,6 +134,49 @@ manim -p --quality=4k content/animator.py ExampleFactsVideo
 
 ---
 
+### `content/thumbnail.py` — Thumbnail Generator (Pillow)
+
+Creates a **1280 × 720 px JPEG** thumbnail with auto-wrapped title text, gradient overlay, accent bar, and optional badge pill.
+
+```python
+from content.thumbnail import create_thumbnail
+
+# Solid background
+path = create_thumbnail(
+    title="How Black Holes Are Formed",
+    output_path="thumbs/ep01.jpg",
+    bg_color=(13, 13, 26),        # deep navy
+    text_color=(255, 255, 255),
+    accent_color=(0, 212, 255),   # electric blue bar + badge
+    badge_text="EP. 1",
+)
+
+# Photo background with gradient overlay
+path = create_thumbnail(
+    title="5 Facts That Will Blow Your Mind",
+    output_path="thumbs/ep02.jpg",
+    bg_image_path="assets/space.jpg",
+    gradient_overlay=True,        # dark overlay keeps text readable
+    accent_color=(255, 107, 53),  # neon coral
+    badge_text="NEW",
+    badge_color=(255, 215, 0),    # gold badge
+)
+```
+
+**Parameters:**
+
+| Parameter | Default | Description |
+|---|---|---|
+| `bg_color` | `(13,13,26)` | Background RGB when no image provided |
+| `text_color` | `(255,255,255)` | Title text colour |
+| `accent_color` | `(0,212,255)` | Accent bar + badge background |
+| `bg_image_path` | `None` | Optional background photo (auto-resized) |
+| `gradient_overlay` | `True` | Dark gradient from bottom for legibility |
+| `badge_text` | `None` | Short pill label e.g. `"NEW"`, `"EP. 5"` |
+| `font_size` | `80` | Starting font size (auto-reduced if title is long) |
+
+---
+
 ## Quick Start
 
 ```bash
@@ -172,4 +217,4 @@ python main.py
 - [ ] Upload retry with exponential back-off (`youtube/uploader.py`)
 - [ ] Analytics fetching and parsing (`youtube/analytics.py`)
 - [ ] Automatic tag generation (`content/metadata.py`)
-- [ ] Thumbnail generation from title (`content/thumbnail.py`)
+- [x] Thumbnail generation from title (`content/thumbnail.py`)
