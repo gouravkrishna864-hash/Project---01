@@ -1,0 +1,13 @@
+{
+  "channel_id": "",
+  "channel_name": "",
+  "default_language": "en",
+  "default_category_id": "22",
+  "description_footer": "\n\n---\n👍 Like & Subscribe for more videos!\n🔔 Hit the notification bell to never miss an upload.\n\n#youtube #automation",
+  "default_tags": [],
+  "upload_defaults": {
+    "privacy_status": "private",
+    "made_for_kids": false,
+    "notify_subscribers": true
+  }
+}
