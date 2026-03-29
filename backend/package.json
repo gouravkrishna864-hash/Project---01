@@ -43,7 +43,6 @@
   "jest": {
     "testEnvironment": "node",
     "testMatch": ["**/__tests__/**/*.test.js"],
-    "setupFiles": ["./src/__tests__/setup.js"],
     "coverageDirectory": "coverage",
     "collectCoverageFrom": ["src/**/*.js", "!src/app.js", "!src/config/migrate.js"]
   }
