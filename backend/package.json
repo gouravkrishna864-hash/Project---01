@@ -29,7 +29,8 @@
     "uuid": "^10.0.0",
     "axios": "^1.7.2",
     "winston": "^3.13.0",
-    "@aws-sdk/client-s3": "^3.600.0"
+    "@aws-sdk/client-s3": "^3.600.0",
+    "@aws-sdk/s3-request-presigner": "^3.600.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",
@@ -38,5 +39,12 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/__tests__/**/*.test.js"],
+    "setupFiles": ["./src/__tests__/setup.js"],
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": ["src/**/*.js", "!src/app.js", "!src/config/migrate.js"]
   }
 }

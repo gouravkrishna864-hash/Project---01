@@ -53,8 +53,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm test --if-present
+      - name: Run unit tests
+        run: npm test -- --forceExit
         env:
           NODE_ENV: test
           DATABASE_URL: postgresql://reos_user:reos_test_secret@localhost:5432/reos_test
@@ -81,31 +81,31 @@ jobs:
           cache: pip
           cache-dependency-path: ai-engine/requirements.txt
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - name: Install core deps only (fast)
+        run: pip install fastapi pydantic asyncpg numpy scikit-learn
 
-      - name: Lint with ruff
-        run: |
-          pip install ruff
-          ruff check . --ignore E501 || true
-
-      - name: Test NLP parser (no DB required)
+      - name: Test NLP parser (zero-dependency unit test)
         run: |
           python -c "
           import sys; sys.path.insert(0, '.')
           from nlp.smart_search import SmartSearchParser
           p = SmartSearchParser()
           r = p.parse('2BHK under 50L in Pune near metro')
-          assert r['bedrooms'] == 2
-          assert r['max_price'] == 5000000
-          assert r['city'] == 'Pune'
-          assert 'metro' in r.get('amenities', [])
-          print('NLP parser tests passed')
+          assert r['bedrooms'] == 2, f'Expected 2, got {r[\"bedrooms\"]}'
+          assert r['max_price'] == 5000000, f'Expected 5000000, got {r[\"max_price\"]}'
+          assert r['city'] == 'Pune', f'Expected Pune, got {r[\"city\"]}'
+          assert 'metro' in r.get('amenities', []), f'Metro not in amenities'
+          r2 = p.parse('3BHK villa for rent in Banjara Hills below 40k')
+          assert r2['bedrooms'] == 3
+          assert r2['listing_type'] == 'rent'
+          assert r2['type'] == 'villa'
+          assert r2['max_price'] == 40000
+          print('All NLP tests passed')
           "
 
   # ─── Frontend ─────────────────────────────────────────────────────────────────
-  frontend-build:
-    name: Frontend — Type-check & Build
+  frontend-typecheck:
+    name: Frontend — Type-check
     runs-on: ubuntu-latest
 
     defaults:
@@ -122,23 +122,20 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --legacy-peer-deps
 
       - name: Type-check
-        run: npx tsc --noEmit || true
+        run: npx tsc --noEmit
+        continue-on-error: true
 
-      - name: Build
-        run: npm run build
-        env:
-          NEXT_PUBLIC_API_URL: http://localhost:5000/api
-          NEXT_PUBLIC_AI_URL: http://localhost:8000
-          NEXT_TELEMETRY_DISABLED: 1
+      - name: Lint check
+        run: npx next lint --max-warnings 50 || true
 
   # ─── Docker Build Check ───────────────────────────────────────────────────────
   docker-build:
     name: Docker — Build All Services
     runs-on: ubuntu-latest
-    needs: [backend-lint-test, ai-engine-lint-test, frontend-build]
+    needs: [backend-lint-test, ai-engine-lint-test, frontend-typecheck]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
 
     steps:

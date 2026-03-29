@@ -7,9 +7,7 @@ const nextConfig = {
       { protocol: 'https', hostname: '*.firebasestorage.googleapis.com' },
     ],
   },
-  experimental: {
-    typedRoutes: true,
-  },
+  experimental: {},
 };
 
 module.exports = nextConfig;
