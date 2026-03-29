@@ -1,0 +1,102 @@
+name: REOS Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/reos
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  deploy:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Determine tag
+        id: meta
+        run: |
+          TAG=${{ github.sha }}
+          ENV=${{ github.event.inputs.environment || 'staging' }}
+          echo "tag=${TAG:0:7}" >> $GITHUB_OUTPUT
+          echo "env=$ENV" >> $GITHUB_OUTPUT
+
+      # ─── Backend ────────────────────────────────────────────────────────────
+      - name: Build & push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:${{ steps.meta.outputs.env }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ─── AI Engine ──────────────────────────────────────────────────────────
+      - name: Build & push AI engine
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ai-engine
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-ai:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-ai:${{ steps.meta.outputs.env }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ─── Frontend ───────────────────────────────────────────────────────────
+      - name: Build & push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_AI_URL=${{ secrets.NEXT_PUBLIC_AI_URL }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ steps.meta.outputs.env }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ─── Deploy via SSH ──────────────────────────────────────────────────────
+      - name: Deploy to server
+        if: steps.meta.outputs.env == 'production'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd /opt/reos
+            export TAG=${{ steps.meta.outputs.tag }}
+            docker compose pull
+            docker compose up -d --no-build
+            docker image prune -f
+            echo "Deployed REOS $TAG to production at $(date)"
