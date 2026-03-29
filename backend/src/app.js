@@ -9,12 +9,17 @@ const rateLimit = require('express-rate-limit');
 const { sequelize } = require('./config/database');
 const logger = require('./config/logger');
 
+// Load all models + associations before sync
+require('./models/index');
+
 // Routes
 const authRoutes = require('./api/routes/auth');
 const userRoutes = require('./api/routes/users');
 const propertyRoutes = require('./api/routes/properties');
 const leadRoutes = require('./api/routes/leads');
 const transactionRoutes = require('./api/routes/transactions');
+const uploadRoutes = require('./api/routes/upload');
+const notificationRoutes = require('./api/routes/notifications');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -45,6 +50,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
@@ -78,6 +85,12 @@ async function start() {
     app.listen(PORT, () => {
       logger.info(`REOS Backend running on port ${PORT}`);
     });
+
+    // Start follow-up reminder cron
+    if (process.env.NODE_ENV !== 'test') {
+      const { startFollowUpCron } = require('./services/followUpCron');
+      startFollowUpCron();
+    }
   } catch (err) {
     logger.error('Failed to start server:', err);
     process.exit(1);

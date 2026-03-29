@@ -5,6 +5,7 @@ const User = require('../../models/User');
 const { runQuery } = require('../../config/neo4j');
 const axios = require('axios');
 const logger = require('../../config/logger');
+const { notificationService } = require('../../services/notificationService');
 
 const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8000';
 
@@ -58,6 +59,13 @@ async function createLead(req, res) {
        SET r.score = $score, r.created_at = datetime()`,
       { uid: req.user.id, pid: property_id, score: ai_score }
     ).catch(() => {});
+
+    // Fire notification to broker (non-blocking)
+    const broker = await User.findByPk(property.broker_id);
+    if (broker) {
+      const leadWithBuyer = { ...lead.toJSON(), buyer: req.user.toPublicJSON() };
+      notificationService.notifyNewLead(leadWithBuyer, property, broker).catch(() => {});
+    }
 
     res.status(201).json({ success: true, data: lead });
   } catch (err) {
